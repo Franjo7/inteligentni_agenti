@@ -1,82 +1,128 @@
-breed [ cars car ]          ; definiranje vrste agenata, navodi se množina i jednina naziva vrste
-breed [ cows cow ]          ; definiranje vrste agenata, navodi se množina i jednina naziva vrste
+turtles-own [
+              model
+              templist
+              x-pos
+              y-pos
+              coords
+              ;found
+            ]
 
 to setup
   clear-all
   reset-ticks
 
-  create-cows 5
+  create-turtles 1
   [
-    set shape "cow"         ; postavljanje oblika agenata vrste (Tools -> Turtle Shapes editor)
-    pen-down
+    setxy -8 -6
+    set shape "vacuum"
+    set color orange
+    set heading 90
+    set model []
+    set templist []
+    ;set found false
   ]
 
-   create-cars 2
+  ask n-of 10 patches [ set pcolor gray ]
+  ask turtle 0
   [
-    set shape "car"         ; postavljanje oblika agenata vrste (Tools -> Turtle Shapes editor)
-    fd 10
-    pen-down
+    make-model
+    show model
   ]
-
 end
 
 to go
   tick
-  ask cows
+  ask turtles
+  [
+    if not empty? model
+    [
+      clean
+    ]
+    stop
+  ]
+end
+
+; funkcija stvara model zaprljanih dijelova prostorije
+to make-model
+  set x-pos -8
+  set y-pos -6
+  loop
+  [
+    set templist []
+    if [pcolor] of patch x-pos y-pos = grey
+    [
+      set templist lput x-pos templist
+      set templist lput y-pos templist
+      set model lput templist model
+    ]
+
+    ifelse x-pos = 8 and y-pos = 6
+    [ stop ]
+    [
+      ifelse x-pos = 8
+      [
+        set x-pos -8
+        set y-pos (y-pos + 1)
+      ]
+      [
+        set x-pos (x-pos + 1)
+      ]
+    ]
+  ]
+end
+
+; funkcija usisivača kojom čisti
+to clean
+  set coords (item 0 model)
+  set x-pos (item 0 coords)
+  set y-pos (item 1 coords)
+  show "Next patch: "
+  show coords
+  wait 1
+  facexy x-pos y-pos
+  ifelse (distancexy x-pos y-pos) > 1
   [
     fd 1
   ]
-end
-
-; funkcija samo za vrstu cars
-to square
-  ask cars
   [
-    repeat 4                ; petlja koja se ponavlja 4 puta
-    [
-      ; blok petlje
-      fd 5
-      right 90              ; okret udesno za 90 stupnjeva
-    ]
+    fd distancexy x-pos y-pos
   ]
 
-end
-
-; funkcija samo za odabranog agenta vrste cow
-to single-cow
-  ask cow cow-unit
+  if ([pcolor] of patch-here = grey)
   [
-    set size 3              ; postavlja se veličina agenta
-    set color gray          ; postavlja se boja agenta
-    repeat 6
-    [
-      fd 3
-      right 300
-    ]
+    show "Cleaning"
+    wait 1
+    set model remove-item 0 model
+    set pcolor black
+    show model
+  ]
+  if empty? model
+  [
+    show "Done"
   ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
 10
-647
-448
+728
+409
 -1
 -1
-13.0
+30.0
 1
 10
 1
 1
 1
 0
+0
+0
 1
-1
-1
--16
-16
--16
-16
+-8
+8
+-6
+6
 0
 0
 1
@@ -84,74 +130,30 @@ ticks
 30.0
 
 BUTTON
-32
-45
+25
+61
+88
+94
+NIL
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
 95
-78
-setup
-setup
+61
+158
+94
 NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-125
-46
-188
-79
-go
 go
 T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-76
-104
-143
-137
-square
-square
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-CHOOSER
-39
-172
-177
-217
-cow-unit
-cow-unit
-0 1 2 3 4
-2
-
-BUTTON
-67
-249
-155
-282
-single-cow
-single-cow
-NIL
 1
 T
 OBSERVER
@@ -162,17 +164,24 @@ NIL
 1
 
 @#$#@#$#@
-## PRIMJER 02
+## 2. VJEŽBE - ZADATAK 5
 
-Primjer pokazuje rad sa više vrsta nezavisnih agenata (engl. _breeds_), predstavljenih različitim oblicima. 
-Osim toga pokazuje se i upravljanje pojedinim agentom, izdvojenim od ostatka vrste.
-Također se pokazuje i rad sa combo boxom na sučelju simulacijskog svijeta i programskom petljom _repeat_.
+Primjer opisuje rad agenta koji upravlja pametnim usisavačem. Zadatak usisavača je čišćenje dijelova prostorije na kojima naiđe na prljavštinu.
+
+## KLASIFIKACIJA REALIZIRANOG AGENTA
+
+Primjer simulira rad reaktivnog agenta zasnovanog na modelu koji upravlja usisavačem i reagira na trenutni podražaj, tj. postojanje prljavštene na poziciji na kojoj se trenutno nalazi, ali vodeći računa o modelu prostorije, tj. listi koordinata na kojima se nalazi prljavština.
+Trenutni opažaj, u kombinaciji s prethodno pohranjenim modelom stanja, daje ažurirani opis stanja. Korištenjem ovog internog modela, odnosno povijesti opažanja agent odabire akciju koju će izvesti. 
+Njegova funkcionalnost je zasnovana na jednom definiranom pravilu stanje-akcija:
+- ukoliko se agent nalazi iznad prljavog dijela modela inicira se njegovo čišćenje. 
 
 ## KAKO MODEL RADI
 
-Pritiskom na upravljačko dugme _**setup**_ postavlja se početno stanje simulacijskog modela sa pet agenata vrste _**cow**_ postavljena u sredinu "svijeta" i (slučajno) usmjerena u različitim smjerovima i dva agenta vrste _**car**_ koja se pomaknu iz sredine. 
-Pritiskom na dugme _**go**_ inicira se kontinuirani tijek vremena u kojem se _krave_ pomiču unaprijed za 1.
-Pritiskom na dugme _**square**_ _auta_ iscrtaju kvadrat. 
+Pritiskom na upravljačko dugme _**setup**_ postavlja se početno stanje simulacijskog modela sa _prljavštinom_ slučajno razmještenom po modelu i predstavljenom sivom bojom dijelova.
+U donji lijevi kut modela postavljen je usisavač i usmjeren u desno.
+
+Funkcija _**move**_ simulira kretanje usisavača od donjeg lijevog kuta ka dijelu prostorije određenom koordinatama prvog _prljavog_ dijela prostorije u modelu. Simulacija se zaustavlja u trenutku kada je model, tj. popois prljavih dijelova prostorije, prazan. 
+Funkcija _**clean**_ simulira provjeru zaprljanosti prostorije na poziciji na kojoj se usisavač trenutno nalazi (_siva boja_) i njeno čišćenje realizirano bojanjem tog dijela prostorije u _crnu boju_ te uklanjanjem koordinata očišćenog dijela prostorije iz modela.
 
 ## OBRATITI PAŽNJU NA
 
@@ -460,6 +469,30 @@ Polygon -10899396 true false 105 90 75 75 55 75 40 89 31 108 39 124 60 105 75 10
 Polygon -10899396 true false 132 85 134 64 107 51 108 17 150 2 192 18 192 52 169 65 172 87
 Polygon -10899396 true false 85 204 60 233 54 254 72 266 85 252 107 210
 Polygon -7500403 true true 119 75 179 75 209 101 224 135 220 225 175 261 128 261 81 224 74 135 88 99
+
+vacuum
+false
+0
+Circle -1 true false 15 15 270
+Circle -16777216 false false 15 15 270
+Circle -7500403 true true 75 75 150
+Circle -16777216 false false 75 75 150
+Circle -7500403 true true 60 60 30
+Circle -7500403 true true 135 30 30
+Circle -7500403 true true 210 60 30
+Circle -7500403 true true 240 135 30
+Circle -7500403 true true 210 210 30
+Circle -7500403 true true 135 240 30
+Circle -7500403 true true 60 210 30
+Circle -7500403 true true 30 135 30
+Circle -16777216 false false 30 135 30
+Circle -16777216 false false 60 210 30
+Circle -16777216 false false 135 240 30
+Circle -16777216 false false 210 210 30
+Circle -16777216 false false 240 135 30
+Circle -16777216 false false 210 60 30
+Circle -16777216 false false 135 30 30
+Circle -16777216 false false 60 60 30
 
 wheel
 false

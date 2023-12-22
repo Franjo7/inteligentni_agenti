@@ -1,32 +1,117 @@
-; sve iza ovog znaka je komentar NetLogo programa koji kompajler ne uzima u obzir
-
-; definiranje funkcije setup koja postavlja početno stanje simulacijskog modela
 to setup
-  clear-all                     ; instrukcija čisti "svijet" simulacijskog modela
-  reset-ticks                   ; resetiraju se otkucaji i postavljaju na nulu
-  create-turtles 3              ; kreiraju se 3 agenta ("kornjače") i zadaju im se karakteristike navedene u bloku
-  [                             ; početak bloka
-    pen-down                    ; instrukcija "spušta olovku" što omogućava agentu da ostavlja trag svoga kretanja
-  ]                             ; kraj bloka
+  clear-all
+  reset-ticks
+
+  ; kreiranje agenta
+  create-turtles 1
+  [
+    set shape "car"
+    set size 2
+    set heading 90
+  ]
+
+  ; postavljanje početnog stanja semafora (crveno svjetlo)
+  ask patch 16 16                  ; gornji desni kut
+  [
+    set pcolor red
+  ]
+  ask patch 16 15
+  [
+    set pcolor black
+  ]
+  ask patch 16 14
+  [
+    set pcolor black
+  ]
 end
 
 to go
-  tick                                                            ; inicira se otkucaj tijeka vremena
-  ask turtles                                                     ; svi agenti izvode radnje koji slijede u bloku
-  [                                                               ; početak bloka
-    fd 1                                                          ; agenti se pomiču za jediničnu dužinu unaprijed
-    set heading (heading - (angle / 2) + random(angle))            ; mijenja se usmjerenje agenta u ovisnosti o slučajnom broju (random) globalne varijable angle
-  ]                                                               ; kraj bloka
+  tick
+  ask turtles
+  [
+    drive
+  ]
+  ask patches
+  [
+    stoplight
+  ]
+end
+
+; funkcija agenata
+to drive
+  ; vozila se kreću većom brzinom ako je na semaforu zeleno svjetlo
+  if ([pcolor] of patch 16 14 = green)
+  [
+    fd 2
+  ]
+  ; vozila se kreću manjom brzinom ako je na semaforu žuto svjetlo
+  if ([pcolor] of patch 16 15 = yellow)
+  [
+    fd 1
+  ]
+end
+
+; funkcija okruženja (patches)
+to stoplight
+  ifelse ticks mod 100 < 45
+  [
+    ; blok instrukcija za crveno svjetlo
+    ask patch 16 16
+    [
+      set pcolor red
+    ]
+    ask patch 16 15
+    [
+      set pcolor black
+    ]
+    ask patch 16 14
+    [
+      set pcolor black
+    ]
+  ]
+  [
+    ifelse ticks mod 100 < 55
+    [
+      ; blok instrukcija za žuto svjetlo
+      ask patch 16 16
+      [
+        set pcolor black
+      ]
+      ask patch 16 15
+      [
+        set pcolor yellow
+      ]
+      ask patch 16 14
+      [
+        set pcolor black
+      ]
+    ]
+    [
+      ; blok instrukcija za zeleno svjetlo
+      ask patch 16 16
+      [
+        set pcolor black
+      ]
+      ask patch 16 15
+      [
+        set pcolor black
+      ]
+      ask patch 16 14
+      [
+        set pcolor green
+      ]
+    ]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
 10
-746
-547
+647
+448
 -1
 -1
-16.0
+13.0
 1
 10
 1
@@ -47,11 +132,11 @@ ticks
 30.0
 
 BUTTON
-24
-52
-87
-85
-setup
+11
+75
+74
+108
+NIL
 setup
 NIL
 1
@@ -64,28 +149,11 @@ NIL
 1
 
 BUTTON
-114
-53
-177
-86
-go
-go
+80
+76
+143
+109
 NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-68
-103
-131
-136
-go
 go
 T
 1
@@ -96,34 +164,28 @@ NIL
 NIL
 NIL
 1
-
-SLIDER
-17
-160
-189
-193
-angle
-angle
-0
-360
-60.0
-1
-1
-degree
-HORIZONTAL
 
 @#$#@#$#@
-## PRIMJER 01
+## 2. VJEŽBE - ZADATAK 1
 
-Primjer pokazuje kreiranje agenata, predstavljanih strelicom, i njihovo kretanje kroz okruženje tijekom vremena. 
-Osim toga pokazuje se i definiranje funkcija NetLoga, sa naglaskom na osnovne funkcije _**setup**_ i _**go**_, koje postavljaju početno stanje i pokreću simulaciju.  
-Pokazaju se i dodavanje upravljačkih dugmadi na sučelje simulacijskog modela i klizača koji predstavljaju globalne varijable simulacijskog modela.
+Primjer prikazuje simulaciju agenata koji upravljaju samohodnim vozilom i reagiraju na svjetlo semafora. Kada je svjetlo crveno vozilo se zaustavlja, a u suprotnom se pokreće određenom brzinom.
+
+
+## KLASIFIKACIJA REALIZIRANOG AGENTA
+
+Primjer simulira rad jednostavnog reaktivnog agenta koji upravlja autonomnim vozilom i reagira samo na trenutni podražaj, tj. svjetlo koje je trenutno upaljeno na semaforu, ne vodeći računa o prethodnim opažanjima. 
+Njegova funkcionalnost je zasnovana na tri definirana pravila stanje-akcija:
+- opaženo crveno svjetlo inicira zaustavljanje vozila,
+- opaženo žuto svjetlo inicira sporije pokretanje vozila, 
+- opaženo zeleno svjetlo inicira brže kretanje vozila
+ 
 
 ## KAKO MODEL RADI
 
-Pritiskom na upravljačko dugme _**setup**_ postavlja se početno stanje simulacijskog modela sa tri agenta postavljena u sredinu "svijeta" i (slučajno) usmjerena u različitim smjerovima. 
-Pritiskom na dugme _**go**_ inicira se jedan otkucaj vremena, a pritiskom na dugme _**go (sa beskonačnom petljom)**_ inicira se kontinuirani tijek vremena.
-Klizač _**angle**_ postavlja kut iz intervala vrijednosti (0, 360) koji određuje raspon slučajno odabranih brojeva prema kojima se prilikom svakog otkucaja vremena mijenja usmjerenje svakog od agenata. 
+Pritiskom na upravljačko dugme _**setup**_ postavlja se početno stanje simulacijskog modela sa jednim agentom koji se postavi u ishodište simulacijskog modela i usmjeri udesno.
+Funkcija _**stoplight**_ simulira rad semafora u gornjem desnom kutu modela u ovisnosti o broju otkucaja.
+Funkcija _**drive**_ simulira kretanje vozila i to sporije kada se upali žuto svjetlo, a brže kada se upali zeleno svjetlo. Kada se na semaforu upali crveno svjetlo, vozilo se zaustavlja.
+
 
 ## OBRATITI PAŽNJU NA
 
@@ -132,7 +194,6 @@ Tijek vremena predstavljen je otkucajima (engl. _ticks_)
 ## POKUŠAJTE
 
 Prilagodite brzinu otkucaja pomjeranjem klizača iznad "svijeta" simulacijskog modela.
-Tijekom simulacije pokušajte mijenjati valičinu globalne varijable _**angle**_ i promatrajte kako ta promjena utječe na kretanje agenata.
 @#$#@#$#@
 default
 true
