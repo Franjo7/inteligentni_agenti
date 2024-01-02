@@ -34,7 +34,7 @@ to setup
     show shopping-list
   ]
 
-  generate-single-item                             ;; FUNKCIJA ZA ZADAĆU KOJA STVARA "ASORTIMAN" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 0 DO 3 PUTA
+  generate-single-item                             ;; FUNKCIJA ZA ZADAĆU KOJA STVARA "ASORTIMAN" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 2 DO 5 PUTA
 
   ask turtle 0
   [
@@ -72,15 +72,15 @@ to generate-random-shopping-list
   ]
 end
 
-;; FUNKCIJA ZA ZADAĆU KOJA STVARA "ASORTIMAN" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 0 DO 3 PUTA
+;; FUNKCIJA ZA ZADAĆU KOJA STVARA "ASORTIMAN" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 2 DO 5 PUTA
 to generate-single-item
-  ask n-of (random 4) patches [ set pcolor orange ]
-  ask n-of (random 4) patches [ set pcolor red ]
-  ask n-of (random 4) patches [ set pcolor green ]
-  ask n-of (random 4) patches [ set pcolor blue ]
-  ask n-of (random 4) patches [ set pcolor yellow ]
-  ask n-of (random 4) patches [ set pcolor grey ]
-  ask n-of (random 4) patches [ set pcolor white ]
+  ask n-of (random 4 + 2) patches [ set pcolor orange ]
+  ask n-of (random 4 + 2) patches [ set pcolor red ]
+  ask n-of (random 4 + 2) patches [ set pcolor green ]
+  ask n-of (random 4 + 2) patches [ set pcolor blue ]
+  ask n-of (random 4 + 2) patches [ set pcolor yellow ]
+  ask n-of (random 4 + 2) patches [ set pcolor grey ]
+  ask n-of (random 4 + 2) patches [ set pcolor white ]
 end
 
 ; agentska funkcija koja omogućava kretanje po trgovini
@@ -90,7 +90,7 @@ to walk
     stop                                          ;; ZAUSTAVI SIMULACIJU
   ]
   set closest-coordinates(item 0 model)           ;; POSTAVLJAMO NA PRVU KOORDINATU IZ MODELA
-  set min-distance 999                            ;; POSTAVIMO NA VISOKU VRIJEDNOST DA OSIGURAMO DA PRVA UDALJENOST BUDE MANJA
+  set min-distance 9999                            ;; POSTAVIMO NA VISOKU VRIJEDNOST DA OSIGURAMO DA PRVA UDALJENOST BUDE MANJA
   set i 0                                         ;; ULAZIMO U ITERACIJU
 
   foreach model
