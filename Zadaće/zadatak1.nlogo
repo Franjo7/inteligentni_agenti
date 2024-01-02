@@ -1,78 +1,157 @@
-; liste agenta za popis za kupovinu i kolica sa kupljenim proizvodima
+; liste agenta za popis za kupovinu i kolica sa kupljenim artiklima
 turtles-own [
               shopping-list
               shopping-cart
+              model                  ;; LISTA KOJA POHRANJUJE KOORDINATE KOJE ODREĐUJU POLOŽAJ ARTIKLA
+              temporary-list         ;; POMOĆNA PRIVREMENA LISTA
+              current-x              ;; VARIJABLE KOJE POHRANJUJU
+              current-y              ;; TRENUTNU POZICIJU AGENTA
+              closest-coordinates    ;; POHRANJUJE KOORDINATE NAJBLIŽEG ARTIKLA U ODNOSU NA TRENUTNU POZICIJU AGENTA
+              min-distance           ;; POHRANJUJE TRENUTNU MINIMALNU UDALJENOST IZMEĐU ARTIKLA I AGENTA
+              i                      ;; POMOĆNA VARIJABLA ZA ITERACIJE
+              index                  ;; POHRANJUJE INDEKS TRENUTNOG ARTIKLA PRILIKOM UKLANJANJA (KOD KUPNJE)
             ]
 
+globals [
+             color-list              ;; LISTA KOJA CE POHRANJIVATI PAROVE [NAZIV BOJE, NETLOGO VRIJEDNOST BOJE] GENERIRANIH BOJA
+        ]
+
 to setup
+
   clear-all
   reset-ticks
 
   create-turtles 1
   [
-    set shopping-cart []
     set shopping-list []
-
-    let available-colors ["Green" "Orange" "Blue" "Red" "Grey" "Yellow" "White"]
-                                                              ; STVARANJE POPISA ZA KUPOVINU
-    while [length shopping-list < (1 + random 7)]             ; NASUMIČNO GENERIRANJE UKUPNOG BROJA ARTIKALA (OD 1 DO 7)
-    [
-      let newColor one-of available-colors                    ; NASUMIČNO GENERIRANJE POJEDINOG ARTIKLA
-      if not member? newColor shopping-list                   ; BEZ PONAVLJANJA
-      [
-        set shopping-list lput newColor shopping-list         ; DODAVANJE NA KRAJ LISTE
-      ]
-    ]
+    set shopping-cart []
+    set color-list []
+    set temporary-list []
+    set model []
+    generate-random-shopping-list                  ;; FUNKCIJA ZA ZADAĆU KOJA GENERIRA LISTU SLUČAJNIH ARTIKALA (BOJA)
     setxy -8 -6
     set heading 90
     show shopping-list
   ]
 
-  ; STVARANJE "ASORTIMANA" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 0 DO 3 PUTA
-   ask n-of (random 4) patches [ set pcolor orange ]
-   ask n-of (random 4) patches [ set pcolor red ]
-   ask n-of (random 4) patches [ set pcolor green ]
-   ask n-of (random 4) patches [ set pcolor blue ]
-   ask n-of (random 4) patches [ set pcolor yellow ]
-   ask n-of (random 4) patches [ set pcolor grey ]
-   ask n-of (random 4) patches [ set pcolor white ]
+  generate-single-item                             ;; FUNKCIJA ZA ZADAĆU KOJA STVARA "ASORTIMAN" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 0 DO 3 PUTA
+
+  ask turtle 0
+  [
+    make-model                                     ;; FUNKCIJA KOJA STVARA MODEL "TRGOVINE"
+  ]
+
 end
 
 to go
+
   tick
-  if ([xcor] of turtle 0 = 8) and ([ycor] of turtle 0 = 6)
+    if empty? color-list                        ;; AKO NEMA ŠTO KUPITI
   [
-    stop
+    stop                                        ;; ZAUSTAVI SIMULACIJU
   ]
   ask turtles
   [
     walk
     shop
   ]
+
+end
+
+;; FUNKCIJA ZA ZADAĆU KOJA GENERIRA LISTU SLUČAJNIH ARTIKALA (BOJA)
+to generate-random-shopping-list
+  let color-map [["Orange" orange] ["Red" red] ["Green" green] ["Blue" blue] ["Grey" grey] ["Yellow" yellow] ["White" white]]
+                                                            ;; MAPIRAMO NAZIV BOJE I ODGOVARAJUĆU NETLOGO VRIJEDNOST BOJE
+
+  while [length shopping-list < (1 + random 7)] [            ;; SVE DOK NE DOSEGNEMO SLUČAJNU VRIJEDNOST IZMEĐU 1 I 7
+    let [new-color new-pcolor] one-of color-map              ;; NASUMIČNO GENERIRAMO NOVI PAR
+    if not (member? new-color shopping-list) [                ;; AKO VEĆ NIJE U LISTI
+      set shopping-list lput new-color shopping-list          ;; DODAJEMO GA NA KRAJ
+      set color-list lput new-pcolor color-list
+    ]
+  ]
+end
+
+;; FUNKCIJA ZA ZADAĆU KOJA STVARA "ASORTIMAN" TRGOVINE NA NAČIN DA SE SVAKI POJEDINAČNI ARTIKAL MOŽE POJAVITI OD 0 DO 3 PUTA
+to generate-single-item
+  ask n-of (random 4) patches [ set pcolor orange ]
+  ask n-of (random 4) patches [ set pcolor red ]
+  ask n-of (random 4) patches [ set pcolor green ]
+  ask n-of (random 4) patches [ set pcolor blue ]
+  ask n-of (random 4) patches [ set pcolor yellow ]
+  ask n-of (random 4) patches [ set pcolor grey ]
+  ask n-of (random 4) patches [ set pcolor white ]
 end
 
 ; agentska funkcija koja omogućava kretanje po trgovini
 to walk
-  ifelse (xcor = 8) and (heading = 90)
+  if empty? color-list                            ;; AKO VIŠE NEMA ŠTO ZA TRAŽITI
   [
-    set heading 0
-    fd 1
-    set heading 270
+    stop                                          ;; ZAUSTAVI SIMULACIJU
+  ]
+  set closest-coordinates(item 0 model)           ;; POSTAVLJAMO NA PRVU KOORDINATU IZ MODELA
+  set min-distance 999                            ;; POSTAVIMO NA VISOKU VRIJEDNOST DA OSIGURAMO DA PRVA UDALJENOST BUDE MANJA
+  set i 0                                         ;; ULAZIMO U ITERACIJU
+
+  foreach model
+  [
+    xy ->  if (distance(patch item 0 xy item 1 xy) < min-distance) and (member? [pcolor] of patch item 0 xy item 1 xy color-list)
+                                                                      ;; AKO ARTIKAL JOŠ NIJE KUPLJEN I AKO JE NJEGOVA UDALJENOST MANJA OD TRENUTNE NAJMANJE
+    [
+      set min-distance distance(patch item 0 xy item 1 xy)            ;; AŽURIRAJ VRIJEDNOSTI VARIJABLI
+      set closest-coordinates xy
+      set index i
+    ]
+    set i (i + 1)
+  ]
+
+  set current-x (item 0 closest-coordinates)                          ;; POSTAVLJAMO POZICIJU AGENTA NA KOORDINATE NAJBLIŽEG ARTIKLA
+  set current-y (item 1 closest-coordinates)
+  wait 1
+  facexy current-x current-y                                          ;; OKREĆEMO GA PREMA TOJ POZICIJI
+  ifelse (distancexy current-x current-y) > 1                         ;; AKO JE UDALJENOST IZMEĐU TRENUTNE POZICIJE I NAJBLIŽEG ARTIKLA VEĆA OD 1
+  [
+    fd 1                                                              ;; POMAKNI SE BLIŽE ZA KORAK
   ]
   [
-    ifelse (xcor = -8) and (heading = 270)
-    [
-      set heading 0
-      fd 1
-      set heading 90
-    ]
-    [
-      fd 1
-    ]
+    fd distancexy current-x current-y                                 ;; U SUPROTNOM, POMAKNI SE TOČNO NA TU KOORDINATU
   ]
+
 end
 
-; agentska funkcija koja omogućava kupovinu proizvoda koji je na popisu
+;; GENERIRAMO MODEL "TRGOVINE" KAKO BI AGENT ZNAO GDJE SE ARTIKLI (BOJE) NALAZE U TRGOVINI
+to make-model
+  set current-x -8
+  set current-y -6
+  loop
+  [
+    set temporary-list []
+    if (member? [pcolor] of patch current-x current-y color-list)     ;; AKO ARTIKAL NA POZICIJI AGENTA JOŠ NIJE KUPLJEN
+    [
+      set temporary-list lput current-x temporary-list                ;; DODAJEMO KOORDINATE U PRIVREMENU LISTU
+      set temporary-list lput current-y temporary-list
+
+      set model lput temporary-list model                             ;; DODAJEMO LISTU U MODEL
+    ]
+
+    ifelse current-x = 8 and current-y = 6
+    [ stop ]
+    [
+      ifelse current-x = 8
+      [
+        set current-x -8
+        set current-y (current-y + 1)
+      ]
+      [
+        set current-x (current-x + 1)
+      ]
+    ]
+  ]
+
+end
+
+
+; agentska funkcija koja omogućava kupovinu artikla koji je na popisu
 ; za kupovinu a nije ranije dodan u kolica
 to shop
   if ([pcolor] of patch-here = orange)
@@ -83,6 +162,9 @@ to shop
       wait 1
       set shopping-cart lput "Orange" shopping-cart
       set pcolor black
+
+      set model remove-item index model                     ;; IZBACI KOORDINATU IZ MODELA
+      set color-list remove orange color-list               ;; IZBACI BOJU IZ TRAŽENIH BOJA
       show shopping-cart
     ]
   ]
@@ -94,6 +176,8 @@ to shop
       wait 1
       set shopping-cart lput "Red" shopping-cart
       set pcolor black
+      set model remove-item index model
+      set color-list remove red color-list
       show shopping-cart
     ]
   ]
@@ -105,6 +189,8 @@ to shop
       wait 1
       set shopping-cart lput "Green" shopping-cart
       set pcolor black
+      set model remove-item index model
+      set color-list remove green color-list
       show shopping-cart
     ]
   ]
@@ -116,6 +202,8 @@ to shop
       wait 1
       set shopping-cart lput "Blue" shopping-cart
       set pcolor black
+      set model remove-item index model
+      set color-list remove blue color-list
       show shopping-cart
     ]
   ]
@@ -127,6 +215,8 @@ to shop
       wait 1
       set shopping-cart lput "Grey" shopping-cart
       set pcolor black
+      set model remove-item index model
+      set color-list remove grey color-list
       show shopping-cart
     ]
   ]
@@ -138,6 +228,8 @@ to shop
       wait 1
       set shopping-cart lput "Yellow" shopping-cart
       set pcolor black
+      set model remove-item index model
+      set color-list remove yellow color-list
       show shopping-cart
     ]
   ]
@@ -149,6 +241,8 @@ to shop
       wait 1
       set shopping-cart lput "White" shopping-cart
       set pcolor black
+      set model remove-item index model
+      set color-list remove white color-list
       show shopping-cart
     ]
   ]
