@@ -1,37 +1,52 @@
-breed [predators predator]
-breed [plijens plijen ]
+breed [ predator predators ]
+breed [ plijen plijens ]
 
-globals [ border-x border-y border-heading current-x current-y hunt-mode ]
+globals [ target1 target2 ]
 
 to setup
   clear-all
   clear-output
-  set border-x -8
-  set border-x -6
-  set border-heading 90
-  set hunt-mode true
-
-  create-predators 1
-  [
-    set shape "cat"
-    setxy -8 -6
-    set heading 90
-  ]
-
-  create-plijens 3
-  [
-    set shape "mouse"
-    setxy random-xcor random-ycor
-  ]
   reset-ticks
+
+  create-predator 1 [ ; prvi predator - roditelj
+    set shape "cat"
+    set color orange
+    setxy -8 -6       ; dolje lijevo
+  ]
+
+  create-predator 1 [ ; prvi predator - dijete
+    set shape "cat"
+    set color orange
+    setxy 8 6         ; gore desno
+  ]
+
+  create-predator 1 [ ; drugi predator - roditelj
+    set shape "cat"
+    set color blue
+    setxy 8 -6        ; dolje desno
+  ]
+
+  create-predator 1 [ ; drugi predator - dijete
+    set shape "cat"
+    set color blue
+    setxy -8 6        ; gore lijevo
+  ]
+
+  create-plijen 3 [
+    set shape "mouse"
+    set color white
+    setxy random-pxcor random-pycor
+  ]
 
 end
 
 to go
 
-  ask predator 0 [ predator-hunt ]
-
-  ask plijens [ plijen-walk ]
+  parent-predator-hunt1
+  parent-predator-hunt2
+  ask plijen [
+    plijen-walk
+  ]
 
   create-agents
 
@@ -39,82 +54,86 @@ to go
 
 end
 
-to predator-hunt
-
-  let nearby-plijen plijens in-radius 3
-
-    if any? nearby-plijen [
-      set hunt-mode false
-      let target min-one-of nearby-plijen [distance myself]
-      if nearby-plijen != nobody [
-       face target
-       ifelse distance target < 1 [
-        ask target [ die ]
-       ]
-       [
+to parent-predator-hunt1
+  if any? turtles with [breed = plijen] [
+    ask turtle 0 [
+      set target1 min-one-of patches with [any? turtles-here with [breed = plijen]] [distance myself]
+      if target1 != nobody [
+        face target1
         fd 1
-       ]
-     ]
-  ]
-
-  if not any? nearby-plijen and hunt-mode = false [
-
-  facexy border-x border-y
-  ifelse (distancexy border-x border-y) > 1
-  [
-    fd 1
-  ]
-
-  [
-    fd distancexy border-x border-y
-    set heading border-heading
-    set xcor border-x
-    set ycor border-y
-    set hunt-mode true
-  ]
-
-  ]
-
-  if hunt-mode = true
-  [
-
-  if (xcor = -8) and (ycor = -6)
-  [
-    set heading 90
-  ]
-
-  if (xcor = -8) and (ycor = 6)
-  [
-    set heading 180
-  ]
-
-  if (xcor = 8) and (ycor = 6)
-  [
-    set heading 270
+        if any? plijen-here
+        [
+          ask plijen-here
+          [
+            die
+          ]
+          child-predator-hunt1
+        ]
+      ]
     ]
-
-  if (xcor = 8) and (ycor = -6)
-  [
-    set heading 0
   ]
+end
 
-  fd 1
-  set border-x xcor
-  set border-y ycor
-  set border-heading heading
+to parent-predator-hunt2
+  if any? turtles with [breed = plijen] [
+    ask turtle 2 [
+      set target2 min-one-of patches with [any? turtles-here with [breed = plijen]] [distance myself]
+      if target2 != nobody[
+        face target2
+        fd 1
+        if any? plijen-here
+        [
+          ask plijen-here
+          [
+            die
+          ]
+          child-predator-hunt2
+        ]
+      ]
+    ]
   ]
+end
 
+to child-predator-hunt1
+  ask turtle 1 [
+    while [patch-here != target1] [
+      face target1
+      fd 1
+    ]
+    if patch-here = target1 [
+      while[patch-here != patch 8 6] [
+        face patch 8 6
+        fd 1
+      ]
+    ]
+  ]
+end
+
+to child-predator-hunt2
+  ask turtle 3 [
+    while [patch-here != target2] [
+      face target2
+      fd 1
+    ]
+    if patch-here = target2 [
+      while[patch-here != patch -8 6] [
+        face patch -8 6
+        fd 1
+      ]
+    ]
+  ]
 end
 
 to plijen-walk
-    set heading random 360
-    fd 1
+  set heading random 360
+  fd 1
 end
 
 to create-agents
  if random 100 < 3 [
-    create-plijens 1 [
+    create-plijen 1 [
       set shape "mouse"
+      set color white
       setxy random-xcor random-ycor
     ]
   ]
@@ -148,11 +167,11 @@ ticks
 30.0
 
 BUTTON
-28
-66
-91
-99
-NIL
+14
+29
+77
+62
+setup
 setup
 NIL
 1
@@ -165,11 +184,11 @@ NIL
 1
 
 BUTTON
-103
-66
-166
-99
-NIL
+88
+29
+151
+62
+go
 go
 T
 1
@@ -182,13 +201,9 @@ NIL
 1
 
 @#$#@#$#@
-## 1. ZADATAK
-
-Model sustava u kojem se nalaze dvije vrste agenata: predator (1 agent) i plijen (3 agenta uz vjerojatnost od 3% da će se pojaviti dodatni agenti ove vrste). Predator kruži po ivici modela, dok se agenti vrste plijen kreću nasumično. Ukoliko se plijen nalazi na udaljenosti manjoj od 3 od predatora, predator se upućuje prema njemu, ubija ga, vraća se do ivice modela i nastavlja kretanje. Dimenzije modela neka budu 17 x 13, tj. x ∈ [-8, 8], y ∈ [-6, 6].
-								
-								
-								
-								
+## 2. ZADATAK 
+ 	
+Napraviti modifikaciju prethodnog primjera za situaciju kada je se u sustavu nalaze dva para agenta vrste predator (tj. dva roditelja i dvoje djece) i tri agenta vrste plijen (uz vjerojatnost od 3% da će se pojaviti dodatni agenti). Svaki od predatora roditelja uočava i lovi plijen i tada poziva svoje predator dijete da ga pojede (ubije). Djeca predator u međuvremenu stoje u nasuprotnim kutovima i u njih se vraćaju nakon što pojedu plijen.
 @#$#@#$#@
 default
 true
